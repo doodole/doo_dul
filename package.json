@@ -1,0 +1,31 @@
+{
+  "name": "doo_dul",
+  "version": "1.0.0",
+  "description": "A twitch bot for moderation and other things. Inspired by Supibot and kunszgbot",
+  "main": "bot.js",
+  "dependencies": {
+    "dank-twitch-irc": "^4.3.0",
+    "dotenv": "^10.0.0",
+    "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
+    "pm2": "^4.5.6",
+    "require-dir": "^1.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doodole/doo_dul.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/doodole/doo_dul/issues"
+  },
+  "homepage": "https://github.com/doodole/doo_dul#readme",
+  "directories": {
+    "lib": "lib"
+  }
+}
