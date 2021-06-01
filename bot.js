@@ -3,12 +3,11 @@ const requireDir = require('require-dir')
 const commands = requireDir('./lib/commands')
 const regex = require('./lib/regex')
 const utils = require('./lib/utils')
-const mysql = require(`mysql`);
+const mysql = require(`mysql2`);
 const fetch = require('node-fetch')
 const pm2 = require('pm2')
 
 const con = utils.con
-const query = utils.query
 
 con.connect(function(err) {
   if (err) throw err;
@@ -36,7 +35,7 @@ client.on("PRIVMSG", (msg) => {
 // joining channels
 const iniChan = async () => {
   channelsql = `SELECT channel FROM channels`
-  const results = await query(channelsql)
+  const [results] = await con.promise().query(channelsql)
   const loopchannels = async () => {
     const channels = []
     for (i = 0; i < results.length; i++) {
@@ -161,7 +160,7 @@ client.on(`PRIVMSG`, (msg) => {
 //sending messages
 const sendMsg = async (channel, chanUID, msg) => {
   const sql = `SELECT * FROM banphrases WHERE channelUID = ${chanUID}`
-  const result = await query(sql)
+  const [result] = await con.promise().query(sql)
   banphrases = result.map(x => x.banphrase)
   for (i = 0; i < banphrases.length; i++) {
     if (msg.toUpperCase().includes(banphrases[i].toUpperCase())) {
@@ -169,7 +168,7 @@ const sendMsg = async (channel, chanUID, msg) => {
       return ;
     }
   }
-  const apiCheck = await query(`SELECT * FROM channels WHERE UID = ${chanUID}`)
+  const [apiCheck] = await con.promise().query(`SELECT * FROM channels WHERE UID = ${chanUID}`)
   if (apiCheck[0].banphraseAPI !== null && apiCheck[0].banphraseAPI !== '') {
     if (apiCheck[0].apiType === 'pajbot') {
       const options = {
@@ -288,9 +287,10 @@ client.on(`PRIVMSG`, async (msg) => {
 
 //raffle for -
 setInterval(async () => {
-  const result = await utils.query(
+  const [result] = await con.promise().query(
     `SELECT * FROM live
-    WHERE channelUID = '17497365'`)
+    WHERE channelUID = '17497365'`
+  )
   if (result[0].isLive === 'true') {
     client.say('minusinsanity', '!raffle 5000')
   }
@@ -298,9 +298,9 @@ setInterval(async () => {
 
 //add new commands automatically
 const dbCommands = async () => {
-  commandNames = Object.keys(commands)
-  dbComNames = await query(`SELECT name FROM commands`)
-  commandsStored = dbComNames.map(i => i.name)
+  const commandNames = Object.keys(commands)
+  const [dbComNames] = await con.promise().query(`SELECT name FROM commands`)
+  const commandsStored = dbComNames.map(i => i.name)
   for (let i = 0; i < commandNames.length; i += 1) {
     const tempCommand = commands[commandNames[i]]
     if (commandsStored.includes(commandNames[i])) {
@@ -311,7 +311,7 @@ const dbCommands = async () => {
         (err) => {if (err) throw err;}
         );
     } else {
-      await query(
+      con.query(
       `INSERT INTO commands (name, aliases, code, userCooldown, chanCooldown, description, permissions)
       VALUES (${mysql.escape(tempCommand.name)}, ${mysql.escape(tempCommand.alias.join(', '))}, ${mysql.escape(tempCommand.code.toString())}, ${mysql.escape(tempCommand.userCooldown)}, ${mysql.escape(tempCommand.chanCooldown)}, ${mysql.escape(tempCommand.description)}, ${mysql.escape(tempCommand.permissions)})`
       )
@@ -319,7 +319,7 @@ const dbCommands = async () => {
   }
   for (let i = 0; i < commandsStored.length; i += 1) {
     if (!commandNames.includes(commandsStored[i])) {
-      await query(
+      con.query(
         `DELETE FROM commands
         WHERE name = ${mysql.escape(commandsStored[i])}`
       )
