@@ -292,7 +292,7 @@ client.on(`PRIVMSG`, async (msg) => {
 setInterval(async () => {
     const [result] = await con.promise().query(
         `SELECT * FROM live
-    WHERE channelUID = '17497365'`
+        WHERE channelUID = '17497365'`
     )
     if (result[0].isLive === 'true') {
         client.say('minusinsanity', '!raffle 5000')
@@ -309,14 +309,14 @@ const dbCommands = async () => {
         if (commandsStored.includes(commandNames[i])) {
             con.query(
                 `UPDATE commands
-        SET aliases = ${mysql.escape(tempCommand.alias.join(', '))}, code = ${mysql.escape(tempCommand.code.toString())}, userCooldown = ${mysql.escape(tempCommand.userCooldown)}, chanCooldown = ${mysql.escape(tempCommand.chanCooldown)}, description = ${mysql.escape(tempCommand.description)}, permissions = ${mysql.escape(tempCommand.permissions)}
-        WHERE name = ${mysql.escape(tempCommand.name)}`,
+                SET aliases = ${mysql.escape(tempCommand.alias.join(', '))}, code = ${mysql.escape(tempCommand.code.toString())}, userCooldown = ${mysql.escape(tempCommand.userCooldown)}, chanCooldown = ${mysql.escape(tempCommand.chanCooldown)}, description = ${mysql.escape(tempCommand.description)}, permissions = ${mysql.escape(tempCommand.permissions)}
+                WHERE name = ${mysql.escape(tempCommand.name)}`,
                 (err) => { if (err) throw err; }
             );
         } else {
             con.query(
                 `INSERT INTO commands (name, aliases, code, userCooldown, chanCooldown, description, permissions)
-      VALUES (${mysql.escape(tempCommand.name)}, ${mysql.escape(tempCommand.alias.join(', '))}, ${mysql.escape(tempCommand.code.toString())}, ${mysql.escape(tempCommand.userCooldown)}, ${mysql.escape(tempCommand.chanCooldown)}, ${mysql.escape(tempCommand.description)}, ${mysql.escape(tempCommand.permissions)})`
+                VALUES (${mysql.escape(tempCommand.name)}, ${mysql.escape(tempCommand.alias.join(', '))}, ${mysql.escape(tempCommand.code.toString())}, ${mysql.escape(tempCommand.userCooldown)}, ${mysql.escape(tempCommand.chanCooldown)}, ${mysql.escape(tempCommand.description)}, ${mysql.escape(tempCommand.permissions)})`
             )
         }
     }
@@ -324,7 +324,7 @@ const dbCommands = async () => {
         if (!commandNames.includes(commandsStored[i])) {
             con.query(
                 `DELETE FROM commands
-        WHERE name = ${mysql.escape(commandsStored[i])}`
+                WHERE name = ${mysql.escape(commandsStored[i])}`
             )
         }
     }
