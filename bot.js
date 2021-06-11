@@ -8,13 +8,11 @@ const fetch = require('node-fetch')
 const pm2 = require('pm2')
 
 const con = utils.con
-const donkteabots = ['g0ldfishbot', 'magichack_', 'ron__bot']
+const donkteabots = ['G0ldfishbot', 'magichack_', 'ron__bot']
 
 con.connect(function (err) {
     if (err) throw err;
 });
-
-con.query(`SET NAMES 'utf8mb4'`)
 
 const client = utils.client
 
