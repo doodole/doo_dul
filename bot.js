@@ -69,7 +69,7 @@ const addChan = async (channel) => {
         method: 'GET',
         headers: {
             'Client-ID': process.env.CLIENTID,
-            'Authorization': 'Bearer ' + utils.AT.token,
+            'Authorization': 'Bearer ' + utils.AT,
         }
     }
     const sql = `SELECT channel FROM channels`
@@ -84,6 +84,7 @@ const addChan = async (channel) => {
         } else {
             const response = await fetch(`https://api.twitch.tv/helix/users?login=` + channel, options);
             const data = await response.json();
+            console.log(data)
             const id = await data.data[0].id
             const sql2 = `INSERT INTO channels (channel, UID) VALUES (${mysql.escape(channel)}, ${mysql.escape(id)})`
             con.query(sql2, function (err) {
