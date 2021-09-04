@@ -8,7 +8,6 @@ const fetch = require('node-fetch')
 const pm2 = require('pm2')
 
 const con = utils.con
-const donkteabots = ['G0ldfishbot', 'magichack_', 'ron__bot']
 
 con.connect(function (err) {
     if (err) throw err;
@@ -31,23 +30,16 @@ client.on("PRIVMSG", (msg) => {
     console.log(`[#${msg.channelName}] ${msg.displayName}: ${msg.messageText}`);
 });
 
-// joining channels
-const iniChan = async () => {
-    channelsql = `SELECT channel FROM channels`
-    const [results] = await con.promise().query(channelsql)
-    const loopchannels = async () => {
-        const channels = []
-        for (i = 0; i < results.length; i++) {
-            channels.push(results[i].channel)
-        }
-        return channels;
-    }
-    const channelsjoin = await loopchannels()
-
+// joining channels at the start
+const initializeChannels = async () => {
     client.connect()
-    client.joinAll(channelsjoin)
+    const [results] = await con.promise().query(`SELECT channel FROM channels`)
+    for (i in results) {
+        client.join(results[i].channel)
+        await new Promise(resolve => setTimeout(resolve, 600))
+    }
 }
-iniChan()
+initializeChannels()
 
 //logging messages
 client.on('PRIVMSG', async (msg) => {
@@ -189,7 +181,14 @@ const sendMsg = async (channel, chanUID, msg) => {
             }
         }
     }
-    client.say(channel, msg)
+    try {
+        client.say(channel, msg)
+    } catch (e) {
+        console.log(e.name)
+        if (e.name === "SayError") {
+            client.say(channel, msg)
+        }
+    }
 }
 
 //handling message types
@@ -229,13 +228,14 @@ client.on(`PRIVMSG`, async (msg) => {
     const senderUID = msg.senderUserID
     const messageReplace = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim()
     if (sender === 'doo_dul') { return }
+    const donkteabots = ['666232174', '137690566', '692489169']
     if (messageReplace === 'FeelsDonkMan TeaTime') {
-        if (donkteabots.includes(sender)) { return }
+        if (donkteabots.includes(senderUID)) { return }
         cooldown = utils.Cooldown(sender, chan, 30000, 60000, 'teadank')
         if (cooldown.length) { return }
         client.say(chan, 'TeaTime FeelsDonkMan')
     } if (messageReplace === 'TeaTime FeelsDonkMan') {
-        if (donkteabots.includes(sender)) { return }
+        if (donkteabots.includes(senderUID)) { return }
         cooldown = utils.Cooldown(sender, chan, 30000, 60000, 'danktea')
         if (cooldown.length) { return }
         client.say(chan, 'FeelsDonkMan TeaTime')
