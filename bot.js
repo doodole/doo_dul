@@ -56,7 +56,7 @@ client.on('PRIVMSG', async (msg) => {
 });
 
 //Add new channels to database
-const addChan = async (channel) => {
+const addChan = async (chan) => {
     const options = {
         method: 'GET',
         headers: {
@@ -64,57 +64,155 @@ const addChan = async (channel) => {
             'Authorization': 'Bearer ' + utils.AT,
         }
     }
-    const sql = `SELECT channel FROM channels`
-    con.query(sql, async function (err, results) {
-        if (err) throw err;
-        const joinedChannels = []
-        for (i = 0; i < results.length; i++) {
-            joinedChannels.push(results[i].channel)
-        }
-        if (joinedChannels.includes(channel)) {
-            return;
-        } else {
-            const response = await fetch(`https://api.twitch.tv/helix/users?login=` + channel, options);
-            const data = await response.json();
-            console.log(data)
-            const id = await data.data[0].id
-            const sql2 = `INSERT INTO channels (channel, UID) VALUES (${mysql.escape(channel)}, ${mysql.escape(id)})`
-            con.query(sql2, function (err) {
-                if (err) throw err;
-                console.log(channel + ` was added to the database`)
-            })
-        }
+    const [channels] = await con.promise().query(
+        `SELECT channel 
+        FROM channels
+        WHERE channel = ?`, [chan]
+    )
+    if (channels.length) { return } 
+    // add to channels table
+    const response = await fetch(`https://api.twitch.tv/helix/users?login=` + chan, options)
+    const data = await response.json()
+    const channelUID = await data.data[0].id
+    con.query(
+        `INSERT INTO channels (channel, UID) 
+        VALUES (?, ?)`, [chan, channelUID],
+        (err) => {
+        if (err) throw err
+        console.log(chan + ` was added to the database`)
     })
+    // add to live table
+    const liveoptions = {
+        method: 'POST',
+        headers: {
+            'Client-ID': process.env.CLIENTID,
+            'Authorization': 'Bearer ' + utils.AT,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "type": "stream.online",
+            "version": "1",
+            "condition": {
+                "broadcaster_user_id": channelUID
+            },
+            "transport": {
+                "method": "webhook",
+                "callback": process.env.LIVE_CALLBACK,
+                "secret": process.env.WEBHOOKSECRET
+            }
+        })
+    }
+    const offlineoptions = {
+        method: 'POST',
+        headers: {
+            'Client-ID': process.env.CLIENTID,
+            'Authorization': 'Bearer ' + utils.AT,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "type": "stream.offline",
+            "version": "1",
+            "condition": {
+                "broadcaster_user_id": channelUID
+            },
+            "transport": {
+                "method": "webhook",
+                "callback": process.env.LIVE_CALLBACK,
+                "secret": process.env.WEBHOOKSECRET
+            }
+        })
+    }
+    const postEventSub = async (option) => {
+        const res = await fetch(`https://api.twitch.tv/helix/eventsub/subscriptions`, option)
+        return await res.json()
+    }
+    const [onlinedata, offlinedata] = await Promise.all([postEventSub(liveoptions), postEventSub(offlineoptions)])
+    console.log(onlinedata, offlinedata)
+    con.query(
+        `INSERT INTO live (channel, channelUID, isLive, messageLive, messageOffline, LiveID, OfflineID, notifications) 
+        VALUES (?, ?, 'false', ?, ?, ?, ?, 'no')`, [chan, channelUID, chan + ' has gone live PogChamp', chan + ' has gone offline FeelsBadMan', onlinedata.data[0].id, offlinedata.data[0].id]
+    )
 }
+
 
 client.on("JOIN", async (msg) => {
     setTimeout(async () => {
         const chan = msg.channelName
-        addChan(chan)
-    }, 1000)
+        addChan(chan) 
+        const liveCheck = await fetch(`https://api.twitch.tv/helix/streams?user_login=${chan}`, {
+            method: 'GET',
+            headers: {
+                'Client-ID': process.env.CLIENTID,
+                'Authorization': 'Bearer ' + utils.AT
+            },
+        })
+        if (liveCheck.status === 401) {
+            utils.AT = await utils.getToken()
+        }
+        const liveCheckData = await liveCheck.json()
+        if (liveCheckData.data.length) {
+            con.query(
+                `UPDATE live
+                SET isLive = "true"
+                WHERE channel = ?`, [chan]
+            )
+        } else {
+            con.query(
+                `UPDATE live
+                SET isLive = "false"
+                WHERE channel = ?`, [chan]
+            )
+        }
+    }, 1500)
 })
 
 //remove channels from the database
-const removeChan = (channel) => {
-    const sql = `SELECT channel FROM channels`
-    con.query(sql, async function (err, results) {
-        if (err) throw err;
-        const joinedChannels = []
-        for (i = 0; i < results.length; i++) {
-            joinedChannels.push(results[i].channel)
+const removeChan = async (chan) => {
+    const [channels] = await con.promise().query(
+        `SELECT channel 
+        FROM channels
+        WHERE channel = ?`, [chan]
+    )
+    if (!channels.length) {
+        console.log('This channel has not been added yet')
+    }
+    con.query(
+        `DELETE FROM channels
+        WHERE channel = ?`, [chan], 
+        (err) => {
+            if (err) throw err
+            console.log(chan + ' was removed from the channels table')
         }
-        if (joinedChannels.includes(channel)) {
-            const sql2 = `DELETE FROM channels WHERE channel = ${mysql.escape(channel)}`
-            con.query(sql2, function (err) {
-                if (err) throw err;
-                console.log(channel + ` was removed from the database`)
-            })
-        }
-        else {
-            console.log(`channel has not been added yet`)
-            return;
-        }
-    })
+    )
+    const [liveNotifications] = await con.promise().query(
+        `SELECT LiveID, OfflineID
+        FROM live
+        WHERE channel = ?`, [chan]
+    )
+    if (liveNotifications.length) {
+        utils.removeEventSub(liveNotifications[0].LiveID)
+        utils.removeEventSub(liveNotifications[0].OfflineID)
+        con.query(
+            `DELETE FROM live 
+            WHERE channel = ?`, [chan]
+        )
+        console.log(chan + ' was removed from the live table')
+    }
+    const [followNotifications] = await con.promise().query(
+        `SELECT id
+        FROM follownotifications
+        WHERE channel = ?`, [chan]
+    )
+    if (followNotifications.length) {
+        utils.removeEventSub(followNotifications[0].id)
+        con.query(
+            `DELETE FROM follownotifications 
+            WHERE channel = ?`, [chan]
+        )
+        console.log(chan + ' was removed from the follownotifications table')
+    }
 }
 
 client.on("PART", (msg) => {
