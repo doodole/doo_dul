@@ -226,30 +226,37 @@ client.on(`PRIVMSG`, async (msg) => {
     const sender = msg.displayName
     const chanUID = msg.channelID
     const senderUID = msg.senderUserID
-    const messageReplace = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim()
+    const cleanMessage = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim()
     if (sender === 'doo_dul') { return }
     const donkteabots = ['666232174', '137690566', '692489169']
-    if (messageReplace === 'FeelsDonkMan TeaTime') {
+    if (cleanMessage === 'FeelsDonkMan TeaTime') {
         if (donkteabots.includes(senderUID)) { return }
         cooldown = utils.Cooldown(sender, chan, 30000, 60000, 'teadank')
         if (cooldown.length) { return }
         client.say(chan, 'TeaTime FeelsDonkMan')
-    } if (messageReplace === 'TeaTime FeelsDonkMan') {
+    } else if (cleanMessage === 'TeaTime FeelsDonkMan') {
         if (donkteabots.includes(senderUID)) { return }
         cooldown = utils.Cooldown(sender, chan, 30000, 60000, 'danktea')
         if (cooldown.length) { return }
         client.say(chan, 'FeelsDonkMan TeaTime')
-    } if (msg.messageText[0] === `*`) {
-        const message = messageReplace.slice(1).split(` `);
+    } else if (msg.messageText[0] === `*`) {
+        const message = cleanMessage.slice(1).split(` `)
         let com = commands[message[0]];
         if (com === undefined) {
-            for (let [command, info] of Object.entries(commands)) {
-                if (info.alias.includes(message[0])) {
+            for (let [command, commandInfo] of Object.entries(commands)) {
+                if (commandInfo.alias.includes(message[0])) {
                     com = commands[command]
                     break
                 }
             }
-        } if (com === undefined) { return }
+        }
+        if (com === undefined) { return }
+        const [channelsDisabled] = await con.promise().query(
+            `SELECT disabledChan
+            FROM commands
+            WHERE name = ?`, [com.name]
+        )
+        if (channelsDisabled[0].disabledChan.includes(chanUID)) { return }
         switch (com.permissions) {
             case 'global':
                 {
@@ -258,7 +265,7 @@ client.on(`PRIVMSG`, async (msg) => {
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
                     typeHandler(output, chan, chanUID)
                 }
-                break;
+                break
             case 'mods':
                 if (msg.badges.hasModerator || msg.badges.hasBroadcaster || msg.displayName === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
@@ -266,7 +273,7 @@ client.on(`PRIVMSG`, async (msg) => {
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
                     typeHandler(output, chan, chanUID)
                 } else { return }
-                break;
+                break
             case 'me':
                 if (msg.displayName === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
@@ -274,7 +281,7 @@ client.on(`PRIVMSG`, async (msg) => {
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
                     typeHandler(output, chan, chanUID)
                 } else { return }
-                break;
+                break
             case 'broadcaster':
                 if (msg.badges.hasBroadcaster || msg.displayName === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
@@ -282,7 +289,7 @@ client.on(`PRIVMSG`, async (msg) => {
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
                     typeHandler(output, chan, chanUID)
                 } else { return }
-                break;
+                break
         }
     }
 })
@@ -301,8 +308,8 @@ setInterval(async () => {
 //add new commands automatically
 const dbCommands = async () => {
     const commandNames = Object.keys(commands)
-    const [dbComNames] = await con.promise().query(`SELECT name FROM commands`)
-    const commandsStored = dbComNames.map(i => i.name)
+    const [dbCommandNames] = await con.promise().query(`SELECT name FROM commands`)
+    const commandsStored = dbCommandNames.map(i => i.name)
     for (let i = 0; i < commandNames.length; i += 1) {
         const tempCommand = commands[commandNames[i]]
         if (commandsStored.includes(commandNames[i])) {
@@ -314,8 +321,8 @@ const dbCommands = async () => {
             );
         } else {
             con.query(
-                `INSERT INTO commands (name, aliases, code, userCooldown, chanCooldown, description, permissions)
-                VALUES (${mysql.escape(tempCommand.name)}, ${mysql.escape(tempCommand.alias.join(', '))}, ${mysql.escape(tempCommand.code.toString())}, ${mysql.escape(tempCommand.userCooldown)}, ${mysql.escape(tempCommand.chanCooldown)}, ${mysql.escape(tempCommand.description)}, ${mysql.escape(tempCommand.permissions)})`
+                `INSERT INTO commands
+                VALUES (${mysql.escape(tempCommand.name)}, ${mysql.escape(tempCommand.alias.join(', '))}, ${mysql.escape(tempCommand.code.toString())}, ${mysql.escape(tempCommand.userCooldown)}, ${mysql.escape(tempCommand.chanCooldown)}, ${mysql.escape(tempCommand.description)}, ${mysql.escape(tempCommand.permissions)}, "")`
             )
         }
     }
