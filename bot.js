@@ -46,13 +46,21 @@ client.on('PRIVMSG', async (msg) => {
     const chan = msg.channelName
     const chanUID = msg.channelID
     const sender = msg.displayName
-    const sender_UID = msg.senderUserID
+    const senderUID = msg.senderUserID
     const messajj = msg.messageText
     const date = Date.now()
-    const sql = `INSERT INTO logs (channel, chanUID, sender, senderUID, message, date) VALUES (${mysql.escape(chan)}, ${mysql.escape(chanUID)}, ${mysql.escape(sender)}, ${mysql.escape(sender_UID)}, ${mysql.escape(messajj)}, ${mysql.escape(date)})`
+    const sql = `INSERT INTO logs (channel, chanUID, sender, senderUID, message, date) VALUES (${mysql.escape(chan)}, ${mysql.escape(chanUID)}, ${mysql.escape(sender)}, ${mysql.escape(senderUID)}, ${mysql.escape(messajj)}, ${mysql.escape(date)})`
     con.query(sql, function (err) {
         if (err) throw err;
     });
+    const [results] = await con.promise().query(`SELECT senderUID FROM chatters WHERE chanUID = ?`, [chanUID])
+    if (!results.length) {
+        con.query(`INSERT INTO chatters VALUES (?, ?, ?)`, [chanUID, chan, senderUID])
+    }
+    const senderUIDs = results.map((i) => {return i.senderUID})
+    if (!senderUIDs.includes(Number(senderUID))) {
+       con.query(`INSERT INTO chatters VALUES (?, ?, ?)`, [chanUID, chan, senderUID])
+    }
 });
 
 //Add new channels to database
@@ -326,7 +334,7 @@ client.on(`PRIVMSG`, async (msg) => {
     const senderUID = msg.senderUserID
     const cleanMessage = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim()
     if (sender === 'doo_dul') { return }
-    const donkteabots = ['666232174', '137690566', '692489169']
+    const donkteabots = ['666232174', '137690566', '692489169', '738936638']
     if (cleanMessage === 'FeelsDonkMan TeaTime') {
         if (donkteabots.includes(senderUID)) { return }
         cooldown = utils.Cooldown(sender, chan, 30000, 60000, 'teadank')
@@ -391,17 +399,6 @@ client.on(`PRIVMSG`, async (msg) => {
         }
     }
 })
-
-//raffle for -
-setInterval(async () => {
-    const [result] = await con.promise().query(
-        `SELECT * FROM live
-        WHERE channelUID = '17497365'`
-    )
-    if (result[0].isLive === 'true') {
-        client.say('minusinsanity', '!raffle 5000')
-    }
-}, 3.6e+6);
 
 //add new commands automatically
 const dbCommands = async () => {
