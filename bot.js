@@ -71,7 +71,8 @@ const addChan = async (chan) => {
     const [channels] = await con.promise().query(
         `SELECT channel 
         FROM channels
-        WHERE channel = ?`, [chan]
+        WHERE channel = ?`, 
+        [chan]
     )
     if (channels.length) { return } 
     // add to channels table
@@ -80,11 +81,15 @@ const addChan = async (chan) => {
     const channelUID = await data.data[0].id
     con.query(
         `INSERT INTO channels (channel, UID) 
-        VALUES (?, ?)`, [chan, channelUID],
+        VALUES (?, ?)`, 
+        [chan, channelUID],
         (err) => {
-        if (err) throw err
-        console.log(chan + ` was added to the database`)
-    })
+            if (err) throw err
+            console.log(chan + ` was added to the database`)
+        }
+    )
+    //create logs table
+    con.query(`CREATE TABLE ${'logs_' + channelUID} LIKE logs_template`)
     // add to live table
     const liveoptions = {
         method: 'POST',
@@ -136,7 +141,8 @@ const addChan = async (chan) => {
     console.log(onlinedata, offlinedata)
     con.query(
         `INSERT INTO live (channel, channelUID, isLive, messageLive, messageOffline, LiveID, OfflineID, notifications) 
-        VALUES (?, ?, 'false', ?, ?, ?, ?, 'no')`, [chan, channelUID, chan + ' has gone live PogChamp', chan + ' has gone offline FeelsBadMan', onlinedata.data[0].id, offlinedata.data[0].id]
+        VALUES (?, ?, 'false', ?, ?, ?, ?, 'no')`,
+        [chan, channelUID, chan + ' has gone live PogChamp', chan + ' has gone offline FeelsBadMan', onlinedata.data[0].id, offlinedata.data[0].id]
     )
 }
 
@@ -175,45 +181,53 @@ client.on("JOIN", async (msg) => {
 //remove channels from the database
 const removeChan = async (chan) => {
     const [channels] = await con.promise().query(
-        `SELECT channel 
+        `SELECT UID
         FROM channels
-        WHERE channel = ?`, [chan]
+        WHERE channel = ?`, 
+        [chan]
     )
     if (!channels.length) {
         console.log('This channel has not been added yet')
     }
+    const channelUID = channels[0].UID 
+    //delete channel from channels table
     con.query(
         `DELETE FROM channels
-        WHERE channel = ?`, [chan], 
+        WHERE channel = ?`, 
+        [chan], 
         (err) => {
             if (err) throw err
             console.log(chan + ' was removed from the channels table')
         }
     )
+    //remove logs table
+    con.query(`DROP TABLE ${'logs_' + channelUID}`)
+    
+    //remove live eventsub
     const [liveNotifications] = await con.promise().query(
         `SELECT LiveID, OfflineID
         FROM live
-        WHERE channel = ?`, [chan]
+        WHERE channelUID = ?`, [channelUID]
     )
     if (liveNotifications.length) {
         utils.removeEventSub(liveNotifications[0].LiveID)
         utils.removeEventSub(liveNotifications[0].OfflineID)
         con.query(
             `DELETE FROM live 
-            WHERE channel = ?`, [chan]
+            WHERE channelUID = ?`, [channelUID]
         )
         console.log(chan + ' was removed from the live table')
     }
     const [followNotifications] = await con.promise().query(
         `SELECT id
         FROM follownotifications
-        WHERE channel = ?`, [chan]
+        WHERE channelUID = ?`, [channelUID]
     )
     if (followNotifications.length) {
         utils.removeEventSub(followNotifications[0].id)
         con.query(
             `DELETE FROM follownotifications 
-            WHERE channel = ?`, [chan]
+            WHERE channelUID = ?`, [channelUID]
         )
         console.log(chan + ' was removed from the follownotifications table')
     }
