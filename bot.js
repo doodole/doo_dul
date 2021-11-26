@@ -18,14 +18,17 @@ const client = utils.client
 client.on("ready", () =>
     console.log("Successfully connected to twitch"),
 );
+
 client.on("close", (error) => {
     if (error !== null) {
         console.error("Client closed due to error", error);
     }
 });
+
 client.on(`JOIN`, (msg) => {
     console.log(`Successfully connected to ` + msg.channelName + "'s chat!")
 });
+
 client.on("PRIVMSG", (msg) => {
     console.log(`[#${msg.channelName}] ${msg.displayName}: ${msg.messageText}`);
 });
@@ -49,18 +52,11 @@ client.on('PRIVMSG', async (msg) => {
     const senderUID = msg.senderUserID
     const messajj = msg.messageText
     const date = Date.now()
-    const sql = `INSERT INTO logs (channel, chanUID, sender, senderUID, message, date) VALUES (${mysql.escape(chan)}, ${mysql.escape(chanUID)}, ${mysql.escape(sender)}, ${mysql.escape(senderUID)}, ${mysql.escape(messajj)}, ${mysql.escape(date)})`
-    con.query(sql, function (err) {
-        if (err) throw err;
-    });
-    const [results] = await con.promise().query(`SELECT senderUID FROM chatters WHERE chanUID = ?`, [chanUID])
-    if (!results.length) {
-        con.query(`INSERT INTO chatters VALUES (?, ?, ?)`, [chanUID, chan, senderUID])
-    }
-    const senderUIDs = results.map((i) => {return i.senderUID})
-    if (!senderUIDs.includes(Number(senderUID))) {
-       con.query(`INSERT INTO chatters VALUES (?, ?, ?)`, [chanUID, chan, senderUID])
-    }
+    con.query(
+        `INSERT INTO ${"logs_" + chanUID} 
+        VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+        [chan, chanUID, sender, senderUID, messajj, date]
+    );
 });
 
 //Add new channels to database
