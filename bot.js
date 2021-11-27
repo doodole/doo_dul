@@ -441,3 +441,9 @@ const dbCommands = async () => {
     }
 }
 dbCommands()
+
+//initialize emotes and update emotes every 5 minutes
+setTimeout(() => {utils.updateEmotes()}, 5000)
+setInterval(async () => {
+    utils.updateEmotes()
+}, 300000)
