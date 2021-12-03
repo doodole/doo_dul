@@ -65,7 +65,7 @@ const addChan = async (chan) => {
         method: 'GET',
         headers: {
             'Client-ID': process.env.CLIENTID,
-            'Authorization': 'Bearer ' + utils.AT,
+            'Authorization': 'Bearer ' + utils.getToken(),
         }
     }
     const [channels] = await con.promise().query(
@@ -95,7 +95,7 @@ const addChan = async (chan) => {
         method: 'POST',
         headers: {
             'Client-ID': process.env.CLIENTID,
-            'Authorization': 'Bearer ' + utils.AT,
+            'Authorization': 'Bearer ' + utils.getToken(),
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
@@ -116,7 +116,7 @@ const addChan = async (chan) => {
         method: 'POST',
         headers: {
             'Client-ID': process.env.CLIENTID,
-            'Authorization': 'Bearer ' + utils.AT,
+            'Authorization': 'Bearer ' + utils.getToken(),
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
@@ -138,7 +138,6 @@ const addChan = async (chan) => {
         return await res.json()
     }
     const [onlinedata, offlinedata] = await Promise.all([postEventSub(liveoptions), postEventSub(offlineoptions)])
-    console.log(onlinedata, offlinedata)
     con.query(
         `INSERT INTO live (channel, channelUID, isLive, messageLive, messageOffline, LiveID, OfflineID, notifications) 
         VALUES (?, ?, 'false', ?, ?, ?, ?, 'no')`,
@@ -155,11 +154,11 @@ client.on("JOIN", async (msg) => {
             method: 'GET',
             headers: {
                 'Client-ID': process.env.CLIENTID,
-                'Authorization': 'Bearer ' + utils.AT
+                'Authorization': 'Bearer ' + utils.getToken()
             },
         })
         if (liveCheck.status === 401) {
-            utils.AT = await utils.getToken()
+            utils.refreshToken()
         }
         const liveCheckData = await liveCheck.json()
         if (liveCheckData.data.length) {
