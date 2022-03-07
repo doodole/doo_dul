@@ -30,7 +30,7 @@ client.on(`JOIN`, (msg) => {
 });
 
 client.on("PRIVMSG", (msg) => {
-    console.log(`[#${msg.channelName}] ${msg.displayName}: ${msg.messageText}`);
+    console.log(`[#${msg.channelName}] ${msg.senderUsername}: ${msg.messageText}`);
 });
 
 // joining channels at the start
@@ -48,7 +48,7 @@ initializeChannels()
 client.on('PRIVMSG', async (msg) => {
     const chan = msg.channelName
     const chanUID = msg.channelID
-    const sender = msg.displayName
+    const sender = msg.senderUsername
     const senderUID = msg.senderUserID
     const messajj = msg.messageText
     const date = Date.now()
@@ -242,7 +242,7 @@ client.on(`PRIVMSG`, (msg) => {
     if (msg.badges.hasModerator === false && msg.badges.hasBroadcaster === false) {
         const banmessage = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim();
         const chan = msg.channelName;
-        const sender = msg.displayName;
+        const sender = msg.senderUsername;
         const chanUID = msg.channelID
         const sql = `SELECT * FROM banphrases WHERE channelUID = ` + mysql.escape(chanUID);
         con.query(sql, function (err, results) {
@@ -338,7 +338,7 @@ const typeHandler = (message, chan, chanUID) => {
 //handle messages
 client.on(`PRIVMSG`, async (msg) => {
     const chan = msg.channelName
-    const sender = msg.displayName
+    const sender = msg.senderUsername
     const chanUID = msg.channelID
     const senderUID = msg.senderUserID
     const cleanMessage = msg.messageText.replace(regex.invisChar, '').replace(/\s+/g, " ").trim()
@@ -382,7 +382,7 @@ client.on(`PRIVMSG`, async (msg) => {
                 }
                 break
             case 'mods':
-                if (msg.badges.hasModerator || msg.badges.hasBroadcaster || msg.displayName === 'doodole_') {
+                if (msg.badges.hasModerator || msg.badges.hasBroadcaster || msg.senderUsername === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
                     if (cooldown.length) { return }
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
@@ -390,7 +390,7 @@ client.on(`PRIVMSG`, async (msg) => {
                 } else { return }
                 break
             case 'me':
-                if (msg.displayName === 'doodole_') {
+                if (msg.senderUsername === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
                     if (cooldown.length) { return }
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
@@ -398,7 +398,7 @@ client.on(`PRIVMSG`, async (msg) => {
                 } else { return }
                 break
             case 'broadcaster':
-                if (msg.badges.hasBroadcaster || msg.displayName === 'doodole_') {
+                if (msg.badges.hasBroadcaster || msg.senderUsername === 'doodole_') {
                     cooldown = utils.Cooldown(sender, chan, com.chanCooldown, com.userCooldown, com.name)
                     if (cooldown.length) { return }
                     const output = await com.code(chan, chanUID, sender, senderUID, message)
