@@ -139,8 +139,8 @@ const addChan = async (chan) => {
     }
     const [onlinedata, offlinedata] = await Promise.all([postEventSub(liveoptions), postEventSub(offlineoptions)])
     con.query(
-        `INSERT INTO live (channel, channelUID, isLive, messageLive, messageOffline, LiveID, OfflineID, notifications) 
-        VALUES (?, ?, 'false', ?, ?, ?, ?, 'no')`,
+        `INSERT INTO live (channel, channelUID, isLive, messageLive, messageOffline, LiveID, OfflineID, notifications, peopleLive, peopleOffline) 
+        VALUES (?, ?, 'false', ?, ?, ?, ?, 'no', '', '')`,
         [chan, channelUID, chan + ' has gone live PogChamp', chan + ' has gone offline FeelsBadMan', onlinedata.data[0].id, offlinedata.data[0].id]
     )
 }
@@ -441,8 +441,8 @@ const dbCommands = async () => {
 }
 dbCommands()
 
-//initialize emotes and update emotes every 5 minutes
+//initialize emotes and update emotes every 10 minutes
 setTimeout(() => {utils.updateEmotes()}, 5000)
 setInterval(async () => {
     utils.updateEmotes()
-}, 300000)
+}, 600000)
