@@ -1,32 +1,20 @@
 {
-  "name": "doo_dul",
+  "name": "typescriptbot",
   "version": "1.0.0",
-  "description": "A twitch bot for moderation and other things. Inspired by Supibot and kunszgbot",
-  "main": "bot.js",
-  "dependencies": {
-    "dank-twitch-irc": "^4.3.0",
-    "dotenv": "^10.0.0",
-    "mysql2": "^2.3.2",
-    "node-fetch": "^2.6.5",
-    "pm2": "^5.1.2",
-    "require-dir": "^1.2.0",
-    "sync-fetch": "^0.3.1",
-    "ws": "^8.2.3"
-  },
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/doodole/doo_dul.git"
+    "start": "node build/index.js"
   },
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/doodole/doo_dul/issues"
+  "devDependencies": {
+    "@types/tmi.js": "^1.8.1",
+    "typescript": "^4.7.4"
   },
-  "homepage": "https://github.com/doodole/doo_dul#readme",
-  "directories": {
-    "lib": "lib"
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "mysql2": "^2.3.3",
+    "tmi.js": "^1.8.5"
   }
 }
