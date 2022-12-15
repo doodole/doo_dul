@@ -39,3 +39,26 @@ export function time (time: number|string|Date): string {
     }
 }
 
+// Storing channel info in an object
+interface ChannelInfo {
+    [key: string]: {uid: number, banphraseAPI: string, banphraseApiType: string}
+}
+
+var allChannelInfo: ChannelInfo = {};
+
+// Channel info getter and setter
+export function getAllChannelInfo(): ChannelInfo {
+    return allChannelInfo;
+}
+
+export async function setAllChannelInfo(): Promise<void> {
+    const [results] = await db.promise().query(`SELECT * FROM channels`);
+    var c = Object.values(results);
+    for (var i in c) {
+        allChannelInfo[c[i].channel] = {
+            uid: c[i].UID,
+            banphraseAPI: c[i].banphraseAPI,
+            banphraseApiType: c[i].apiType
+        }
+    }
+}

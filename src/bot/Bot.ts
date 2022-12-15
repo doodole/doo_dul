@@ -1,7 +1,7 @@
 import { Client } from "tmi.js";
 import { Message } from "./Message";
 import * as commands from "../commands";
-import { db } from "../utils";
+import { db, getAllChannelInfo } from "../utils";
 
 export class Bot {
     private client: Client;
@@ -60,22 +60,17 @@ export class Bot {
                 };
             }
         });
-        return aliasStatus
+        return aliasStatus;
     }
 
     // Logs message in database.
-    // This is probably not the most efficient way to log the bot's own logs, but the userstate on the bot's messages don't give the info needed for some reason.
     private async addLog(message: Message): Promise<void> {
         if (message.self) {
-            const [result] = await db.promise().query(
-                `SELECT UID FROM channels WHERE channel = ?`,
-                [message.channel]
-            )
-            const channelUID = Object.values(result)[0].UID;
+            const channelUID = getAllChannelInfo()[message.channel].uid
             db.query(
                 `INSERT INTO ${"logs_" + channelUID} 
                 VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-                [message.channel, channelUID, process.env.BOT_NAME, 652792580, message.text, Date.now()] 
+                [message.channel, channelUID, process.env.BOT_NAME, process.env.BOT_UID, message.text, Date.now()] 
             )
             return;
         }
