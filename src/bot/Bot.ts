@@ -46,7 +46,7 @@ export class Bot {
         
         const donkTeaBots = ['666232174', '137690566', '692489169', '738936638'];
         if (message.text === "FeelsDonkMan TeaTime" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
-            const onCooldown = cooldown(message.sender, message.channel, 0, 0, "teadank");
+            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "teadank");
             if (onCooldown) {
                 return;
             }
