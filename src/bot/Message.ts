@@ -4,6 +4,7 @@ export class Message {
     public channel: string;
     public sender: string;
     public text: string;
+    public uncleanText: string;
     public userstate: ChatUserstate;
     public self: boolean;
 
@@ -11,6 +12,7 @@ export class Message {
         this.channel = channel.startsWith("#") ? channel.substring(1) : channel;
         this.sender = userstate.username as string;
         this.text = this.cleanMessage(text);
+        this.uncleanText = this.text;
         this.userstate = userstate;
         this.self = self;
     }

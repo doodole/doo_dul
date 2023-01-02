@@ -5,6 +5,7 @@ import { db, getAllChannelInfo, cooldown } from "../utils";
 
 export class Bot {
     private client: Client;
+    private lastBotMessages: {[channel: string]: string } = {};
 
     constructor(client: Client) {
         this.client = client;
@@ -16,11 +17,13 @@ export class Bot {
         this.client.on('chat', (channel, userstate, text, self) => { this.chatMessageHandler(new Message(channel, userstate, text, self)) });
     }
 
-    // TODO: implement banphrase check
     private async chatMessageHandler(message: Message): Promise<void> {
         this.addLog(message);
+        console.log(message);
 
         if(message.self) {
+            // set last sent message
+            this.lastBotMessages[message.channel] = message.uncleanText;
             return;
         } 
         
@@ -36,25 +39,32 @@ export class Bot {
                 }
 
                 const commandResult = await commandObject.code(message);
-                this.client.say(message.channel, commandResult);
+                this.sendMessage(message.channel, commandResult);
             }
             return;
         } 
         
         const donkTeaBots = ['666232174', '137690566', '692489169', '738936638'];
         if (message.text === "FeelsDonkMan TeaTime" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
-            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "teadank");
+            const onCooldown = cooldown(message.sender, message.channel, 0, 0, "teadank");
             if (onCooldown) {
                 return;
             }
-            this.client.say(message.channel, "TeaTime FeelsDonkMan");
+            this.sendMessage(message.channel, "TeaTime FeelsDonkMan");
         } else if (message.text === "TeaTime FeelsDonkMan" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
             const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "danktea");
             if (onCooldown) {
                 return;
             }
-            this.client.say(message.channel, "FeelsDonkMan TeaTime");
+            this.sendMessage(message.channel, "FeelsDonkMan TeaTime");
         }
+    }
+
+    private sendMessage(channel: string, message: string): void {
+        if (message === this.lastBotMessages[channel]) {
+            message += " \u{E0000}";
+        }
+        this.client.say(channel, message)
     }
 
     private checkCommand(command: string): string {
