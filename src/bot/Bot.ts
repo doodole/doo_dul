@@ -1,7 +1,7 @@
 import { Client } from "tmi.js";
 import { Message } from "./Message";
 import * as commands from "../commands";
-import { db, getAllChannelInfo } from "../utils";
+import { db, getAllChannelInfo, cooldown } from "../utils";
 
 export class Bot {
     private client: Client;
@@ -28,9 +28,32 @@ export class Bot {
             const possibleCommand = message.text.split(" ")[0].substring(1);
             const command = this.checkCommand(possibleCommand);
             if (command) {
-                const commandResult = await commands[command as keyof typeof commands].code(message);
+                const commandObject = commands[command as keyof typeof commands];
+
+                const onCooldown = cooldown(message.sender, message.channel, commandObject.chanCooldown, commandObject.userCooldown, commandObject.name);
+                if (onCooldown) {
+                    return;
+                }
+
+                const commandResult = await commandObject.code(message);
                 this.client.say(message.channel, commandResult);
             }
+            return;
+        } 
+        
+        const donkTeaBots = ['666232174', '137690566', '692489169', '738936638'];
+        if (message.text === "FeelsDonkMan TeaTime" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
+            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "teadank");
+            if (onCooldown) {
+                return;
+            }
+            this.client.say(message.channel, "TeaTime FeelsDonkMan");
+        } else if (message.text === "TeaTime FeelsDonkMan" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
+            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "danktea");
+            if (onCooldown) {
+                return;
+            }
+            this.client.say(message.channel, "FeelsDonkMan TeaTime");
         }
     }
 
@@ -38,11 +61,11 @@ export class Bot {
         if (command in commands) {
             return command;
         } else {
-            let alias = this.isAlias(command);
-            if (alias.isAlias) {
-                return alias.commandName;
+            const aliasStatus = this.isAlias(command);
+            if (aliasStatus.isAlias) {
+                return aliasStatus.commandName;
             }
-            return ""
+            return "";
         }
     }
 

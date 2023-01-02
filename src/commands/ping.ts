@@ -12,6 +12,6 @@ export const ping: Command = {
     description: "Pings the bot. Also shows some information about the bot",
     permissions: "global",
     async code (message: Message): Promise<string> {
-        return `${message.userstate.username}, yo. uptime: ${time(startTime)}`;
+        return `${message.sender}, yo. uptime: ${time(startTime)}`;
     },  
 }
