@@ -16,7 +16,6 @@ export class Bot {
         this.client.on('chat', (channel, userstate, text, self) => { this.chatMessageHandler(new Message(channel, userstate, text, self)) });
     }
 
-    // TODO: implement banphrase check
     private async chatMessageHandler(message: Message): Promise<void> {
         this.addLog(message);
 
