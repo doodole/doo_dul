@@ -39,3 +39,51 @@ export function time (time: number|string|Date): string {
     }
 }
 
+// Storing channel info in an object
+interface ChannelInfo {
+    [key: string]: {uid: number, banphraseAPI: string, banphraseApiType: string}
+}
+
+var allChannelInfo: ChannelInfo = {};
+
+// Channel info getter and setter
+export function getAllChannelInfo(): ChannelInfo {
+    return allChannelInfo;
+}
+
+export async function setAllChannelInfo(): Promise<void> {
+    const [results] = await db.promise().query(`SELECT * FROM channels`);
+    var c = Object.values(results);
+    for (var i in c) {
+        allChannelInfo[c[i].channel] = {
+            uid: c[i].UID,
+            banphraseAPI: c[i].banphraseAPI,
+            banphraseApiType: c[i].apiType
+        }
+    }
+}
+
+let cooldowns: string[] = [];
+
+export function cooldown (sender: string, channel: string, chanCooldown: number, userCooldown: number, commandName: string): Boolean {
+    if (cooldowns.includes(`${channel}${commandName}`) || cooldowns.includes(`${sender}_${commandName}`)) { 
+        return true;
+    }
+    else {
+        cooldowns.push(`${channel}${commandName}`);
+        setTimeout(() => {
+            const index = cooldowns.indexOf(`${channel}${commandName}`);
+            if (index > -1) {
+                cooldowns.splice(index, 1);
+            };
+        }, chanCooldown);
+        cooldowns.push(`${sender}_${commandName}`)
+        setTimeout(() => {
+            const index = cooldowns.indexOf(`${sender}_${commandName}`);
+            if (index > -1) {
+                cooldowns.splice(index, 1);
+            };
+        }, userCooldown);
+        return false;
+    };
+};

@@ -1,10 +1,11 @@
 import { Client } from "tmi.js";
 import { Message } from "./Message";
 import * as commands from "../commands";
-import { db } from "../utils";
+import { db, getAllChannelInfo, cooldown } from "../utils";
 
 export class Bot {
     private client: Client;
+    private lastBotMessages: {[channel: string]: string } = {};
 
     constructor(client: Client) {
         this.client = client;
@@ -18,8 +19,11 @@ export class Bot {
 
     private async chatMessageHandler(message: Message): Promise<void> {
         this.addLog(message);
+        console.log(message);
 
         if(message.self) {
+            // set last sent message
+            this.lastBotMessages[message.channel] = message.uncleanText;
             return;
         } 
         
@@ -27,21 +31,51 @@ export class Bot {
             const possibleCommand = message.text.split(" ")[0].substring(1);
             const command = this.checkCommand(possibleCommand);
             if (command) {
-                const commandResult = await commands[command as keyof typeof commands].code(message);
-                this.client.say(message.channel, commandResult);
+                const commandObject = commands[command as keyof typeof commands];
+
+                const onCooldown = cooldown(message.sender, message.channel, commandObject.chanCooldown, commandObject.userCooldown, commandObject.name);
+                if (onCooldown) {
+                    return;
+                }
+
+                const commandResult = await commandObject.code(message);
+                this.sendMessage(message.channel, commandResult);
             }
+            return;
+        } 
+        
+        const donkTeaBots = ['666232174', '137690566', '692489169', '738936638'];
+        if (message.text === "FeelsDonkMan TeaTime" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
+            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "teadank");
+            if (onCooldown) {
+                return;
+            }
+            this.sendMessage(message.channel, "TeaTime FeelsDonkMan");
+        } else if (message.text === "TeaTime FeelsDonkMan" && !donkTeaBots.includes(message.userstate["user-id"] as string)) {
+            const onCooldown = cooldown(message.sender, message.channel, 30000, 60000, "danktea");
+            if (onCooldown) {
+                return;
+            }
+            this.sendMessage(message.channel, "FeelsDonkMan TeaTime");
         }
+    }
+
+    private sendMessage(channel: string, message: string): void {
+        if (message === this.lastBotMessages[channel]) {
+            message += " \u{E0000}";
+        }
+        this.client.say(channel, message)
     }
 
     private checkCommand(command: string): string {
         if (command in commands) {
             return command;
         } else {
-            let alias = this.isAlias(command);
-            if (alias.isAlias) {
-                return alias.commandName;
+            const aliasStatus = this.isAlias(command);
+            if (aliasStatus.isAlias) {
+                return aliasStatus.commandName;
             }
-            return ""
+            return "";
         }
     }
 
@@ -59,22 +93,17 @@ export class Bot {
                 };
             }
         });
-        return aliasStatus
+        return aliasStatus;
     }
 
     // Logs message in database.
-    // This is probably not the most efficient way to log the bot's own logs, but the userstate on the bot's messages don't give the info needed for some reason.
     private async addLog(message: Message): Promise<void> {
         if (message.self) {
-            const [result] = await db.promise().query(
-                `SELECT UID FROM channels WHERE channel = ?`,
-                [message.channel]
-            )
-            const channelUID = Object.values(result)[0].UID;
+            const channelUID = getAllChannelInfo()[message.channel].uid
             db.query(
                 `INSERT INTO ${"logs_" + channelUID} 
                 VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-                [message.channel, channelUID, process.env.BOT_NAME, 652792580, message.text, Date.now()] 
+                [message.channel, channelUID, process.env.BOT_NAME, process.env.BOT_UID, message.text, Date.now()] 
             )
             return;
         }
