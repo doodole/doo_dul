@@ -63,26 +63,20 @@ export async function setAllChannelInfo(): Promise<void> {
     }
 }
 
-let cooldowns: string[] = [];
+let cooldowns = new Set<string>();
 
 export function cooldown (sender: string, channel: string, chanCooldown: number, userCooldown: number, commandName: string): Boolean {
-    if (cooldowns.includes(`${channel}${commandName}`) || cooldowns.includes(`${sender}_${commandName}`)) { 
+    if (cooldowns.has(`${channel}${commandName}`) || cooldowns.has(`${sender}_${commandName}`)) { 
         return true;
     }
     else {
-        cooldowns.push(`${channel}${commandName}`);
+        cooldowns.add(`${channel}${commandName}`);
         setTimeout(() => {
-            const index = cooldowns.indexOf(`${channel}${commandName}`);
-            if (index > -1) {
-                cooldowns.splice(index, 1);
-            };
+            cooldowns.delete(`${channel}${commandName}`);
         }, chanCooldown);
-        cooldowns.push(`${sender}_${commandName}`)
+        cooldowns.add(`${sender}_${commandName}`);
         setTimeout(() => {
-            const index = cooldowns.indexOf(`${sender}_${commandName}`);
-            if (index > -1) {
-                cooldowns.splice(index, 1);
-            };
+            cooldowns.delete(`${sender}_${commandName}`)
         }, userCooldown);
         return false;
     };
