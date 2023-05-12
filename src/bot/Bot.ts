@@ -102,16 +102,16 @@ export class Bot {
             const channelUID = getAllChannelInfo()[message.channel].uid
             db.query(
                 `INSERT INTO ${"logs_" + channelUID} 
-                VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-                [message.channel, channelUID, process.env.BOT_NAME, process.env.BOT_UID, message.text, Date.now()] 
+                VALUES (?, ?, ?, ?, NULL)`,
+                [process.env.BOT_NAME, process.env.BOT_UID, message.text, Date.now()] 
             )
             return;
         }
         let { 'room-id': channelUID, username, 'user-id': senderUID } = message.userstate;
         db.query(
             `INSERT INTO ${"logs_" + channelUID} 
-            VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-            [message.channel, channelUID, username, senderUID, message.text, Date.now()]
+            VALUES (?, ?, ?, ?, NULL)`,
+            [username, senderUID, message.text, Date.now()]
         );
     }
 }
