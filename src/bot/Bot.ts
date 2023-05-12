@@ -101,17 +101,17 @@ export class Bot {
         if (message.self) {
             const channelUID = getAllChannelInfo()[message.channel].uid
             db.query(
-                `INSERT INTO ${"logs_" + channelUID} (sender, senderUID, message, date)
-                VALUES (?, ?, ?, ?)`,
+                `INSERT INTO ${"logs_" + channelUID} 
+                VALUES (?, ?, ?, ?, NULL)`,
                 [process.env.BOT_NAME, process.env.BOT_UID, message.text, Date.now()] 
             )
             return;
         }
         let { 'room-id': channelUID, username, 'user-id': senderUID } = message.userstate;
         db.query(
-            `INSERT INTO ${"logs_" + channelUID} (sender, senderUID, message, date)
-            VALUES (?, ?, ?, ?)`,
-            [username, senderUID, message.text, Date.now()]
+            `INSERT INTO ${"logs_" + channelUID} 
+            VALUES (?, ?, ?, ?, NULL)`,
+            [message.channel, channelUID, username, senderUID, message.text, Date.now()]
         );
     }
 }
