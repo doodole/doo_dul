@@ -1,7 +1,8 @@
 import { Client } from "tmi.js";
 import { Message } from "./Message";
 import * as commands from "../commands";
-import { db, getAllChannelInfo, cooldown } from "../utils";
+import { getAllChannelInfo, cooldown } from "../utils";
+import { db } from "../base/db"
 
 export class Bot {
     private client: Client;
