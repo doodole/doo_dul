@@ -1,10 +1,11 @@
 import "dotenv/config";
 import { Client } from "tmi.js";
 import { Bot } from "./bot/Bot";
-import { client } from "./base/client";
+import { getClient, initializeClient } from "./base/client-scripts";
 
 async function start(): Promise<void> {
-    const bot = new Bot(client);
+    await initializeClient();
+    const bot = new Bot(getClient());
     bot.run();
 }
 
